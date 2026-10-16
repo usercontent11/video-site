@@ -5,7 +5,7 @@ import httpx,psycopg
 from bs4 import BeautifulSoup
 
 BASE=os.getenv("SOURCE_ORIGIN","https://mobilexh.live").rstrip("/")
-PAGES=int(os.getenv("MAX_PAGES","500"))
+PAGES=int(os.getenv("MAX_PAGES","50"))
 WORKERS=max(1,min(6,int(os.getenv("WORKERS","3"))))
 DELAY=max(0.5,float(os.getenv("REQUEST_DELAY","1.5")))
 logging.basicConfig(level=logging.INFO,format="%(asctime)s %(levelname)s %(message)s")
