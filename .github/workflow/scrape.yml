@@ -1,0 +1,80 @@
+name: Scrape one category
+on:
+  workflow_dispatch:
+    inputs:
+      category:
+        description: 'Optional slug (blank selects next)'
+        type: string
+        required: false
+      chain:
+        description: 'Run next category after success'
+        type: boolean
+        default: true
+permissions:
+  contents: write
+  actions: write
+concurrency:
+  group: category-scraper
+  cancel-in-progress: false
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      MAX_PAGES: '500'
+      WORKERS: '3'
+      REQUEST_DELAY: '1.5'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+      - run: pip install -r requirements.txt
+      - name: Run scraper
+        id: scrape
+        continue-on-error: true
+        run: python scraper.py --mode production --category "${{ inputs.category }}"
+      - name: Commit diagnostics directly to repository
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ ! -d diagnostics ] || [ -z "$(find diagnostics -type f -print -quit)" ]; then
+            echo "No diagnostic files to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- diagnostics/
+          if git diff --cached --quiet; then
+            echo "No new diagnostics"
+            exit 0
+          fi
+          git commit -m "diagnostics: capture failed scraper response (run ${{ github.run_id }}) [skip ci]"
+          git push origin HEAD:${{ github.ref_name }}
+      - name: Check whether another category remains
+        id: next
+        if: always() && inputs.chain
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import os,psycopg
+          with psycopg.connect(os.environ['DATABASE_URL']) as db:
+              count=db.execute("SELECT count(*) FROM categories WHERE status IN ('pending','running','failed')").fetchone()[0]
+          print(f'has_next={str(count>0).lower()}')
+          PY
+      - name: Cooldown between category runs (15 minutes)
+        if: always() && inputs.chain && steps.next.outputs.has_next == 'true'
+        run: |
+          echo "Category run finished. Waiting 15 minutes before next dispatch..."
+          sleep 900
+      - name: Start next category
+        if: always() && inputs.chain && steps.next.outputs.has_next == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run scrape.yml --ref "${{ github.ref_name }}" -f chain=true
+
+      - name: Fail job if selected category failed
+        if: steps.scrape.outcome == 'failure'
+        run: exit 1
