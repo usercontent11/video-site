@@ -5,7 +5,7 @@
 3. Run **Scrape one category** with blank category and chain=true. Each successful run dispatches the next category.
 4. If a run fails, rerun it: pages already stored in Neon remain checkpointed.
 
-The source categories come from `category_list.json`. The scraper uses 3 concurrent HTTP requests, delay, exponential retry, and 500 pages per category; empty responses and HTTP 403/429 abort rather than being counted successful. GitHub Actions may time out at 350 minutes: rerun to resume. A category is completed only after **all 500 pages** succeed.
+The source categories come from `category_list.json`. The scraper uses 3 concurrent HTTP requests, delay, exponential retry, and 30 pages per category; empty responses and HTTP 403/429 abort rather than being counted successful. GitHub Actions may time out at 350 minutes: rerun to resume. A category is completed only after **all 30 pages** succeed.
 
 Tables: `categories` (category name/slug/status), `videos` (one row per video ID), `video_categories` (many-to-many), `scrape_pages` (checkpoints). All video and creator URLs are saved as paths without hostnames. Only the thumbnail path is stored, without a domain, as requested. Note that upstream CDN paths may require their original host or signed tokens to work; the frontend must provide a valid image origin. SEO metadata can later be added to `categories` per slug.
 

@@ -5,7 +5,7 @@ import httpx,psycopg
 from bs4 import BeautifulSoup
 
 BASE=os.getenv("SOURCE_ORIGIN","https://mobilexh.live").rstrip("/")
-PAGES=int(os.getenv("MAX_PAGES","50"))
+PAGES=int(os.getenv("MAX_PAGES","30"))
 WORKERS=max(1,min(6,int(os.getenv("WORKERS","3"))))
 DELAY=max(0.5,float(os.getenv("REQUEST_DELAY","1.5")))
 logging.basicConfig(level=logging.INFO,format="%(asctime)s %(levelname)s %(message)s")
@@ -240,7 +240,7 @@ async def run(args):
      items=await fetch(client,args.category or "18-year-old",1)
      log.info("Live test: %s cards; no database writes",len(items))
   return
- if not 1<=PAGES<=500:raise ValueError("MAX_PAGES must be 1..500")
+ if not 1<=PAGES<=30:raise ValueError("MAX_PAGES must be 1..30")
  with psycopg.connect(os.environ["DATABASE_URL"],autocommit=True) as db:
   init(db)
   with db.transaction():
@@ -279,7 +279,7 @@ async def run(args):
       raise RuntimeError(f"Page {min(not_found)} returned 404, but end-of-pagination could not be verified; no completion recorded")
    count=db.execute("SELECT count(*) FROM scrape_pages WHERE category_slug=%s AND page BETWEEN 1 AND %s",(s,PAGES)).fetchone()[0]
    if count!=PAGES:raise RuntimeError(f"Only {count}/{PAGES} pages saved")
-   if PAGES==500:
+   if PAGES==30:
     with db.transaction():db.execute("UPDATE categories SET status='completed',terminal_page=%s,completed_at=now(),updated_at=now() WHERE slug=%s",(PAGES,s))
     log.info("COMPLETE %s",s)
    else:log.info("Partial run; not marking complete")

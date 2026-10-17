@@ -22,7 +22,7 @@ jobs:
     timeout-minutes: 350
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      MAX_PAGES: '500'
+      MAX_PAGES: '30'
       WORKERS: '3'
       REQUEST_DELAY: '1.5'
     steps:
