@@ -1,0 +1,12 @@
+{
+  "category": "cowgirl",
+  "page": 3,
+  "time_utc": "20261017T155505Z",
+  "url": "https://mobilexh.live/categories/cowgirl/3",
+  "status_code": 200,
+  "content_type": "text/html; charset=UTF-8",
+  "bytes": 38112,
+  "sha256": "541868aca127b2302f9888859a13bd7bc6dd8ad259f45cebbca787fe635adb6b",
+  "reason": "No recognized listing records",
+  "diagnostics": "bytes=38112 title='xHamster' video_id_nodes=0 video_links=0 scripts=18 meta_refresh=False verification_hint=False body_sample=''"
+}
