@@ -1,0 +1,12 @@
+{
+  "category": "cougar",
+  "page": 1,
+  "time_utc": "20261017T205820Z",
+  "url": "https://mobilexh.live/categories/cougar",
+  "status_code": 200,
+  "content_type": "text/html; charset=UTF-8",
+  "bytes": 37882,
+  "sha256": "aafa927f282eff6285627047aa7e4c33d6b167d88daa06cc8b9ff98c506f4ae3",
+  "reason": "No recognized listing records",
+  "diagnostics": "bytes=37882 title='xHamster' video_id_nodes=0 video_links=0 scripts=18 meta_refresh=False verification_hint=False body_sample=''"
+}
