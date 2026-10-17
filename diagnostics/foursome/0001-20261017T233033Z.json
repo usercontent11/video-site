@@ -1,0 +1,12 @@
+{
+  "category": "foursome",
+  "page": 1,
+  "time_utc": "20261017T233033Z",
+  "url": "https://mobilexh.live/categories/foursome",
+  "status_code": 200,
+  "content_type": "text/html; charset=UTF-8",
+  "bytes": 37990,
+  "sha256": "9e0c62ee6411666b4e0100314bbc595ae663ea9384fb2d2e6575c14a4a8a684f",
+  "reason": "No recognized listing records",
+  "diagnostics": "bytes=37990 title='xHamster' video_id_nodes=0 video_links=0 scripts=18 meta_refresh=False verification_hint=False body_sample=''"
+}
