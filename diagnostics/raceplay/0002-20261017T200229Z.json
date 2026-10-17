@@ -1,0 +1,12 @@
+{
+  "category": "raceplay",
+  "page": 2,
+  "time_utc": "20261017T200229Z",
+  "url": "https://mobilexh.live/categories/raceplay/2",
+  "status_code": 200,
+  "content_type": "text/html; charset=UTF-8",
+  "bytes": 38165,
+  "sha256": "35b6ea4a93b992a33de17eb26bcc1b9251520ef1359a6b8c3d9c8e02c06c44c9",
+  "reason": "No recognized listing records",
+  "diagnostics": "bytes=38165 title='xHamster' video_id_nodes=0 video_links=0 scripts=18 meta_refresh=False verification_hint=False body_sample=''"
+}
