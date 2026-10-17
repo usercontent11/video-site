@@ -1,0 +1,12 @@
+{
+  "category": "weird",
+  "page": 1,
+  "time_utc": "20261017T204012Z",
+  "url": "https://mobilexh.live/categories/weird",
+  "status_code": 200,
+  "content_type": "text/html; charset=UTF-8",
+  "bytes": 37834,
+  "sha256": "0b452c3bef1efe4fccc230fde70dd938a762cf8ace362abb84fbee8cf10b4378",
+  "reason": "No recognized listing records",
+  "diagnostics": "bytes=37834 title='xHamster' video_id_nodes=0 video_links=0 scripts=18 meta_refresh=False verification_hint=False body_sample=''"
+}
