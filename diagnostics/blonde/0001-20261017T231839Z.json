@@ -1,0 +1,12 @@
+{
+  "category": "blonde",
+  "page": 1,
+  "time_utc": "20261017T231839Z",
+  "url": "https://mobilexh.live/categories/blonde",
+  "status_code": 200,
+  "content_type": "text/html; charset=UTF-8",
+  "bytes": 37900,
+  "sha256": "0fd31f477d44d1508cdf9c101220f418585c586e0ac3f69d7ee32e91bff3c672",
+  "reason": "No recognized listing records",
+  "diagnostics": "bytes=37900 title='xHamster' video_id_nodes=0 video_links=0 scripts=18 meta_refresh=False verification_hint=False body_sample=''"
+}
