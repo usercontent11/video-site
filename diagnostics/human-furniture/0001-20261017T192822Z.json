@@ -1,0 +1,12 @@
+{
+  "category": "human-furniture",
+  "page": 1,
+  "time_utc": "20261017T192822Z",
+  "url": "https://mobilexh.live/categories/human-furniture",
+  "status_code": 200,
+  "content_type": "text/html; charset=UTF-8",
+  "bytes": 38331,
+  "sha256": "42b0b1e45968aa4b81825c42a67fa7637d257fd49131c7cd0e2e671c3c3cc1d4",
+  "reason": "No recognized listing records",
+  "diagnostics": "bytes=38331 title='xHamster' video_id_nodes=0 video_links=0 scripts=18 meta_refresh=False verification_hint=False body_sample=''"
+}
