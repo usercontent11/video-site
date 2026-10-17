@@ -1,0 +1,12 @@
+{
+  "category": "show",
+  "page": 2,
+  "time_utc": "20261017T105043Z",
+  "url": "https://mobilexh.live/categories/show/2",
+  "status_code": 200,
+  "content_type": "text/html; charset=UTF-8",
+  "bytes": 37971,
+  "sha256": "07001d45e85c82b41b67b4e453b48e9ad0ff443cc3a5398499ef94a923e2cf44",
+  "reason": "No recognized listing records",
+  "diagnostics": "bytes=37971 title='xHamster' video_id_nodes=0 video_links=0 scripts=18 meta_refresh=False verification_hint=False body_sample=''"
+}
