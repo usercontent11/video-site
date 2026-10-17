@@ -1,0 +1,12 @@
+{
+  "category": "exotic",
+  "page": 2,
+  "time_utc": "20261017T221243Z",
+  "url": "https://mobilexh.live/categories/exotic/2",
+  "status_code": 200,
+  "content_type": "text/html; charset=UTF-8",
+  "bytes": 38049,
+  "sha256": "7557daf136c553eac021b2b7970de659df5f3a0b1811d8c556b432b78ddc8ac4",
+  "reason": "No recognized listing records",
+  "diagnostics": "bytes=38049 title='xHamster' video_id_nodes=0 video_links=0 scripts=18 meta_refresh=False verification_hint=False body_sample=''"
+}
