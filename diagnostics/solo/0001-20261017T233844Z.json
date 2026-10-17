@@ -1,0 +1,12 @@
+{
+  "category": "solo",
+  "page": 1,
+  "time_utc": "20261017T233844Z",
+  "url": "https://mobilexh.live/categories/solo",
+  "status_code": 200,
+  "content_type": "text/html; charset=UTF-8",
+  "bytes": 37818,
+  "sha256": "87df8515be13086124fb4c240b6c3e3b36c162dd2c39a6a1066dbb7d9394a18a",
+  "reason": "No recognized listing records",
+  "diagnostics": "bytes=37818 title='xHamster' video_id_nodes=0 video_links=0 scripts=18 meta_refresh=False verification_hint=False body_sample=''"
+}
