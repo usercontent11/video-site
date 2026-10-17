@@ -1,0 +1,12 @@
+{
+  "category": "mzansi",
+  "page": 1,
+  "time_utc": "20261017T213410Z",
+  "url": "https://mobilexh.live/categories/mzansi",
+  "status_code": 200,
+  "content_type": "text/html; charset=UTF-8",
+  "bytes": 37887,
+  "sha256": "08f0532918a83aa00bb0b94032e3b7d156424c7dd662d6cce6ba0c2af99a7b90",
+  "reason": "No recognized listing records",
+  "diagnostics": "bytes=37887 title='xHamster' video_id_nodes=0 video_links=0 scripts=18 meta_refresh=False verification_hint=False body_sample=''"
+}
