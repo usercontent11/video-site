@@ -64,11 +64,6 @@ jobs:
               count=db.execute("SELECT count(*) FROM categories WHERE status IN ('pending','running','failed')").fetchone()[0]
           print(f'has_next={str(count>0).lower()}')
           PY
-      - name: Cooldown between category runs (15 minutes)
-        if: always() && inputs.chain && steps.next.outputs.has_next == 'true'
-        run: |
-          echo "Category run finished. Waiting 15 minutes before next dispatch..."
-          sleep 900
       - name: Start next category
         if: always() && inputs.chain && steps.next.outputs.has_next == 'true'
         env:

@@ -38,8 +38,8 @@ Review blocked categories:
 SELECT slug,status,last_error FROM categories WHERE status='blocked' ORDER BY sort_order;
 ```
 
-## Continuous queue with completion-based cooldown
+## Continuous queue without runner cooldown
 
-Start **Scrape one category** using blank category and `chain=true`. After the selected category run finishes, the workflow checks Neon for remaining eligible categories. If at least one remains, it waits **900 seconds (15 minutes)** and dispatches the next workflow. The interval begins **after scraping and diagnostic commits finish**, not on a wall-clock 15-minute cron schedule. If a category fails and is marked `blocked`, the queue continues to the next eligible category, preserving all successful per-page commits. When there are no remaining pending/running/failed categories, chaining stops automatically; blocked categories require an explicit manual retry. Set `chain=false` to run just one category.
+Start **Scrape one category** using blank category and `chain=true`. After the selected category run finishes, the workflow checks Neon for remaining eligible categories and dispatches the next workflow immediately. This avoids spending Actions minutes on an idle 15-minute sleep. The scraper still uses its configured per-request delay (`REQUEST_DELAY: '1.5'`) and three concurrent workers. If a category fails and is marked `blocked`, the queue skips it and continues to the next eligible category, preserving successful page checkpoints. When no pending/running/failed categories remain, chaining stops automatically; blocked categories require an explicit manual retry. Set `chain=false` to run just one category.
 
-**Tradeoff:** This straightforward cooldown holds a GitHub-hosted runner for 15 minutes between categories and counts toward GitHub Actions usage. If many categories are queued, replace it with an external delayed dispatcher to avoid runner-time costs. The cooling-down workflow will show as active until the 15 minutes have elapsed. No scheduled cron is used.
+**Tradeoff:** There is no longer an extra 15-minute pause between categories. If the source starts returning HTTP 403/429 or other access errors, stop the chain or increase `REQUEST_DELAY` before retrying.
