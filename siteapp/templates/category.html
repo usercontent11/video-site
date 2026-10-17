@@ -1,0 +1,4 @@
+{% extends "base.html" %}{% block description %}Browse {{ category.name }} video listings, organized for quick discovery.{% endblock %}
+{% block body %}<section class="category-heading"><span class="eyebrow">CATEGORY</span><h1>{{ category.name }}</h1><p>Explore the {{ category.name }} collection.</p></section>
+<section class="section"><div class="section-heading"><h2>Videos</h2><span>Page {{ page }}</span></div>{% include "_cards.html" %}
+<div class="pagination">{% if page>1 %}<a href="?page={{ page-1 }}">← Previous</a>{% endif %}{% if videos|length==24 %}<a href="?page={{ page+1 }}">Next →</a>{% endif %}</div></section>{% endblock %}

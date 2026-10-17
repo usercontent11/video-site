@@ -43,3 +43,10 @@ SELECT slug,status,last_error FROM categories WHERE status='blocked' ORDER BY so
 Start **Scrape one category** using blank category and `chain=true`. After the selected category run finishes, the workflow checks Neon for remaining eligible categories and dispatches the next workflow immediately. This avoids spending Actions minutes on an idle 15-minute sleep. The scraper still uses its configured per-request delay (`REQUEST_DELAY: '1.5'`) and three concurrent workers. If a category fails and is marked `blocked`, the queue skips it and continues to the next eligible category, preserving successful page checkpoints. When no pending/running/failed categories remain, chaining stops automatically; blocked categories require an explicit manual retry. Set `chain=false` to run just one category.
 
 **Tradeoff:** There is no longer an extra 15-minute pause between categories. If the source starts returning HTTP 403/429 or other access errors, stop the chain or increase `REQUEST_DELAY` before retrying.
+
+
+## Video catalog website
+
+The Flask site is in `app.py` and `siteapp/`. Deployment configuration for Vercel is in `vercel.json`; configure the environment variables described in [SITE_README.md](SITE_README.md) before deploying. Vercel installs dependencies from the repository-root `requirements.txt`, so keep the website dependencies listed there. The separate `site-requirements.txt` is available for a smaller standalone website environment.
+
+The site reads the existing Neon catalog populated by the scraper. It does not download or host video files. By default, video pages link to the original publisher; playback through an HLS resolver requires an explicitly configured, authorized resolver and allowlisted hosts. Set a verified `THUMBNAIL_ORIGIN` that matches the stored image paths; do not assume all thumbnails share one CDN.

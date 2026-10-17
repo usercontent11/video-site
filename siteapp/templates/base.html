@@ -1,0 +1,10 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>{{ title }} · {{ site_name }}</title><meta name="description" content="{% block description %}Browse categorized video listings and discover creators.{% endblock %}">
+<link rel="canonical" href="{{ canonical }}"><meta name="robots" content="index,follow">
+<meta property="og:title" content="{{ title }}"><meta property="og:url" content="{{ canonical }}">
+<meta property="og:type" content="website">
+<link rel="stylesheet" href="{{ url_for('static',filename='style.css') }}">
+{% block head %}{% endblock %}</head><body>
+<header><div class="wrap nav"><a class="brand" href="{{ url_for('site.index') }}"><span class="brandmark">▶</span> {{ site_name }}</a><nav><a href="{{ url_for('site.index') }}">Explore</a><a href="{{ url_for('site.index') }}#categories">Categories</a></nav></div></header>
+<main class="wrap">{% block body %}{% endblock %}</main><footer class="wrap"><span>© {{ site_name }}</span><span>Catalog metadata is supplied by external publishers.</span></footer>
+</body></html>

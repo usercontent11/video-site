@@ -1,0 +1,7 @@
+{% extends "base.html" %}{% block body %}
+<section class="hero"><span class="eyebrow">VIDEO DIRECTORY</span><h1>Find your next <em>watch.</em></h1><p>An organized catalog with fast navigation and useful category collections.</p></section>
+<section class="section" id="categories"><div class="section-heading"><h2>Browse categories</h2></div><div class="chips" id="category-list"></div></section>
+<section class="section"><div class="section-heading"><h2>Browse videos</h2><span>Page {{ page }}</span></div>{% include "_cards.html" %}
+<div class="pagination">{% if page>1 %}<a href="?page={{ page-1 }}">← Previous</a>{% endif %}{% if videos|length==24 %}<a href="?page={{ page+1 }}">Next →</a>{% endif %}</div></section>
+<script>fetch('/api/categories').then(r=>r.json()).then(d=>{const root=document.getElementById('category-list');d.categories.slice(0,80).forEach(c=>{const a=document.createElement('a');a.href='/category/'+encodeURIComponent(c.slug);a.textContent=c.name;root.appendChild(a)})}).catch(()=>{})</script>
+{% endblock %}
