@@ -385,6 +385,8 @@ def extract_media_from_html(html: str, video_id: int, requested_url: str) -> Ext
     else:
         result.status = "partial"
         result.reason_code = "partial"
+    if result.rejected_fields:
+        result.error = "Rejected media fields: " + json.dumps(result.rejected_fields, ensure_ascii=True)[:780]
     return result
 
 
@@ -735,9 +737,9 @@ def _database_update(db: psycopg.Connection, row_updates: list[tuple[int, dict[s
     for column in ALL_MEDIA_COLUMNS:
         if column in URL_COLUMNS:
             if refresh_existing:
-                expr = f"COALESCE(src.{column}, NULLIF(v.{column}, ''))"
+                expr = f"COALESCE(src.{column}, NULLIF(v.{column}, ''), v.{column})"
             else:
-                expr = f"COALESCE(NULLIF(v.{column}, ''), src.{column})"
+                expr = f"COALESCE(NULLIF(v.{column}, ''), src.{column}, v.{column})"
         else:
             expr = f"COALESCE(src.{column}, v.{column})" if not refresh_existing else f"COALESCE(src.{column}, v.{column})"
         assignments.append(f"{column} = {expr}")
@@ -753,38 +755,47 @@ def _database_update(db: psycopg.Connection, row_updates: list[tuple[int, dict[s
 
 
 def _write_tracker(db: psycopg.Connection, records: list[tuple[dict[str, Any], ExtractedMedia, str, int, int | None, list[str], dict[str, str]]]) -> None:
+    """Upsert every batch's tracking data with one parameterized SQL statement."""
     if not records:
         return
-    with db.transaction():
-        for row, result, status, attempts, retry_minutes, missing, hosts in records:
-            last_error = (result.error or result.reason_code or "")[:900] or None
-            db.execute(
-                """
-                INSERT INTO public.video_media_enrichment
-                    (video_id, status, attempts, next_retry_at, last_attempt_at,
-                     last_http_status, reason_code, last_error, missing_fields, media_hosts, updated_at)
-                VALUES
-                    (%s, %s, %s,
-                     CASE WHEN %s::int IS NULL THEN NULL ELSE now() + (%s::int * interval '1 minute') END,
-                     now(), %s, %s, %s, %s, %s, now())
-                ON CONFLICT (video_id) DO UPDATE SET
-                    status = EXCLUDED.status,
-                    attempts = EXCLUDED.attempts,
-                    next_retry_at = EXCLUDED.next_retry_at,
-                    last_attempt_at = EXCLUDED.last_attempt_at,
-                    last_http_status = EXCLUDED.last_http_status,
-                    reason_code = EXCLUDED.reason_code,
-                    last_error = EXCLUDED.last_error,
-                    missing_fields = EXCLUDED.missing_fields,
-                    media_hosts = COALESCE(public.video_media_enrichment.media_hosts, '{}'::jsonb) || EXCLUDED.media_hosts,
-                    updated_at = now()
-                """,
-                (
-                    row["id"], status, attempts, retry_minutes, retry_minutes,
-                    result.http_status, result.reason_code, last_error, missing, Jsonb(hosts),
-                ),
-            )
-
+    values_sql: list[str] = []
+    params: list[Any] = []
+    for row, result, status, attempts, retry_minutes, missing, hosts in records:
+        values_sql.append(
+            "(%s::BIGINT, %s::TEXT, %s::SMALLINT, %s::INT, %s::INT, "
+            "%s::TEXT, %s::TEXT, %s::TEXT[], %s::JSONB)"
+        )
+        last_error = (result.error or result.reason_code or "")[:900] or None
+        params.extend([
+            row["id"], status, attempts, retry_minutes, result.http_status,
+            result.reason_code, last_error, missing, Jsonb(hosts),
+        ])
+    sql = f"""
+        INSERT INTO public.video_media_enrichment
+            (video_id, status, attempts, next_retry_at, last_attempt_at,
+             last_http_status, reason_code, last_error, missing_fields, media_hosts, updated_at)
+        SELECT src.video_id, src.status, src.attempts,
+               CASE WHEN src.retry_minutes IS NULL THEN NULL
+                    ELSE now() + (src.retry_minutes * interval '1 minute') END,
+               now(), src.last_http_status, src.reason_code, src.last_error,
+               src.missing_fields, src.media_hosts, now()
+        FROM (VALUES {", ".join(values_sql)}) AS src(
+            video_id, status, attempts, retry_minutes, last_http_status,
+            reason_code, last_error, missing_fields, media_hosts
+        )
+        ON CONFLICT (video_id) DO UPDATE SET
+            status = EXCLUDED.status,
+            attempts = EXCLUDED.attempts,
+            next_retry_at = EXCLUDED.next_retry_at,
+            last_attempt_at = EXCLUDED.last_attempt_at,
+            last_http_status = EXCLUDED.last_http_status,
+            reason_code = EXCLUDED.reason_code,
+            last_error = EXCLUDED.last_error,
+            missing_fields = EXCLUDED.missing_fields,
+            media_hosts = COALESCE(public.video_media_enrichment.media_hosts, '{}'::jsonb) || EXCLUDED.media_hosts,
+            updated_at = now()
+    """
+    db.execute(sql, params)
 
 async def _process_rows(rows: list[dict[str, Any]], client: httpx.AsyncClient, concurrency: int, min_interval: float) -> list[ExtractedMedia]:
     limiter = AdaptiveLimiter(concurrency)
