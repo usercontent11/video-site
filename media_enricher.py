@@ -797,9 +797,16 @@ def _write_tracker(db: psycopg.Connection, records: list[tuple[dict[str, Any], E
     """
     db.execute(sql, params)
 
-async def _process_rows(rows: list[dict[str, Any]], client: httpx.AsyncClient, concurrency: int, min_interval: float) -> list[ExtractedMedia]:
-    limiter = AdaptiveLimiter(concurrency)
-    pacer = HostPacer(min_interval)
+async def _process_rows(
+    rows: list[dict[str, Any]],
+    client: httpx.AsyncClient,
+    concurrency: int,
+    min_interval: float,
+    limiter: AdaptiveLimiter | None = None,
+    pacer: HostPacer | None = None,
+) -> list[ExtractedMedia]:
+    limiter = limiter or AdaptiveLimiter(concurrency)
+    pacer = pacer or HostPacer(min_interval)
     queue: asyncio.Queue[dict[str, Any] | None] = asyncio.Queue(maxsize=max(1, concurrency * 2))
     results: dict[int, ExtractedMedia] = {}
 
@@ -898,6 +905,9 @@ async def run(args: argparse.Namespace) -> int:
         async with httpx.AsyncClient(
             timeout=timeout, limits=limits, headers=headers, follow_redirects=False
         ) as client:
+            # Keep host pacing and adaptive concurrency state across database batches.
+            limiter = AdaptiveLimiter(args.concurrency)
+            pacer = HostPacer(args.min_request_interval)
             last_id = -1
             while stats["processed"] < total:
                 remaining = total - stats["processed"]
@@ -913,7 +923,7 @@ async def run(args: argparse.Namespace) -> int:
                     break
                 if args.video_id is None:
                     last_id = rows[-1]["id"]
-                results = await _process_rows(rows, client, args.concurrency, args.min_request_interval)
+                results = await _process_rows(rows, client, args.concurrency, args.min_request_interval, limiter, pacer)
     
                 update_rows: list[tuple[int, dict[str, Any]]] = []
                 tracker_records = []
