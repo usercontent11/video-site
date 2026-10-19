@@ -48,8 +48,8 @@ def page_html(video_id=VIDEO_ID, include_same_page_card=True, include_other_rela
         "pageURL": PRIMARY_PAGE,
         "thumbURL": THUMB,
         "previewThumbURL": PREVIEW,
-        "spriteURL": SPRITE,
-        "trailerURL": TRAILER,
+        "spriteURL": SPRITE if include_same_page_card else None,
+        "trailerURL": TRAILER if include_same_page_card else None,
     }
     cards = []
     if include_same_page_card:
