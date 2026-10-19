@@ -283,6 +283,10 @@ def _same_page_url(left: Any, right: Any) -> bool:
 def extract_media_from_html(html: str, video_id: int, requested_url: str) -> ExtractedMedia:
     """Extract only from the page's verified primary videoModel and same-page card."""
     try:
+        video_directory(video_id)
+    except ValueError as exc:
+        raise ExtractionError("unsupported_video_id_layout", str(exc), terminal=True) from exc
+    try:
         state = _parse_initial_state(html)
     except ExtractionError:
         raise
@@ -525,7 +529,7 @@ async def extract_record(
                 sample = page.html[:120_000].lower()
                 challenge = any(term in sample for term in (
                     "captcha", "challenge-platform", "checking your browser",
-                    "verify your age", "ageverificationinf o", "access denied",
+                    "verify your age", "ageverificationinfo", "access denied",
                 ))
                 if challenge:
                     raise ExtractionError(
@@ -880,84 +884,86 @@ async def run(args: argparse.Namespace) -> int:
             LOG.info("No eligible videos.")
             return 0
 
-        last_id = -1
-        while stats["processed"] < total:
-            remaining = total - stats["processed"]
-            rows = fetch_batch(
-                db,
-                last_id=last_id,
-                batch_size=min(args.batch_size, remaining),
-                dry_run=args.dry_run,
-                refresh_existing=args.refresh_existing,
-                video_id=args.video_id,
-            )
-            if not rows:
-                break
-            if args.video_id is None:
-                last_id = rows[-1]["id"]
-            async with httpx.AsyncClient(
-                timeout=timeout, limits=limits, headers=headers, follow_redirects=False
-            ) as client:
-                results = await _process_rows(rows, client, args.concurrency, args.min_request_interval)
-
-            update_rows: list[tuple[int, dict[str, Any]]] = []
-            tracker_records = []
-            for row, result in zip(rows, results):
-                result.attempts_before = int(row.get("attempts") or 0)
-                stats["processed"] += 1
-                if result.status == "complete":
-                    stats["complete"] += 1
-                elif result.status == "partial":
-                    stats["partial"] += 1
-                elif result.status == "no_media":
-                    stats["no_media"] += 1
-                else:
-                    stats["failed"] += 1
-                if result.status == "inaccessible":
-                    stats["inaccessible"] += 1
-                if args.dry_run and args.video_id is not None:
-                    print(json.dumps(_diagnostic_payload(row, result, args.refresh_existing), indent=2, ensure_ascii=False))
-                elif args.dry_run:
-                    LOG.info("DRY RUN video_id=%s result=%s extracted=%d reason=%s",
-                             result.video_id, result.status,
-                             sum(result.fields.get(c) is not None for c in ALL_MEDIA_COLUMNS),
-                             result.reason_code)
-
-                for column in ALL_MEDIA_COLUMNS:
-                    if result.fields.get(column) is not None:
-                        field_counts[column] += 1
-
-                fields_to_write, hosts_to_store, missing, row_status = prepare_result_for_row(
-                    row, result, args.refresh_existing
+        async with httpx.AsyncClient(
+            timeout=timeout, limits=limits, headers=headers, follow_redirects=False
+        ) as client:
+            last_id = -1
+            while stats["processed"] < total:
+                remaining = total - stats["processed"]
+                rows = fetch_batch(
+                    db,
+                    last_id=last_id,
+                    batch_size=min(args.batch_size, remaining),
+                    dry_run=args.dry_run,
+                    refresh_existing=args.refresh_existing,
+                    video_id=args.video_id,
                 )
-                if not args.dry_run:
-                    if fields_to_write:
-                        update_rows.append((row["id"], fields_to_write))
-                    tracker_status, attempts, retry_minutes = _tracker_status(
-                        result, result.attempts_before, missing, row_status
+                if not rows:
+                    break
+                if args.video_id is None:
+                    last_id = rows[-1]["id"]
+                results = await _process_rows(rows, client, args.concurrency, args.min_request_interval)
+    
+                update_rows: list[tuple[int, dict[str, Any]]] = []
+                tracker_records = []
+                for row, result in zip(rows, results):
+                    result.attempts_before = int(row.get("attempts") or 0)
+                    stats["processed"] += 1
+                    if result.status == "complete":
+                        stats["complete"] += 1
+                    elif result.status == "partial":
+                        stats["partial"] += 1
+                    elif result.status == "no_media":
+                        stats["no_media"] += 1
+                    else:
+                        stats["failed"] += 1
+                    if result.status == "inaccessible":
+                        stats["inaccessible"] += 1
+                    if args.dry_run and args.video_id is not None:
+                        print(json.dumps(_diagnostic_payload(row, result, args.refresh_existing), indent=2, ensure_ascii=False))
+                    elif args.dry_run:
+                        LOG.info("DRY RUN video_id=%s result=%s extracted=%d reason=%s",
+                                 result.video_id, result.status,
+                                 sum(result.fields.get(c) is not None for c in ALL_MEDIA_COLUMNS),
+                                 result.reason_code)
+    
+                    for column in ALL_MEDIA_COLUMNS:
+                        if result.fields.get(column) is not None:
+                            field_counts[column] += 1
+    
+                    fields_to_write, hosts_to_store, missing, row_status = prepare_result_for_row(
+                        row, result, args.refresh_existing
                     )
-                    if tracker_status == "retry":
-                        stats["retry_scheduled"] += 1
-                    if tracker_status == "exhausted":
-                        stats["exhausted"] += 1
-                    tracker_records.append((
-                        row, result, tracker_status, attempts, retry_minutes,
-                        missing, hosts_to_store,
-                    ))
-
-            if not args.dry_run:
-                stats["database_rows_updated"] += _database_update(db, update_rows, args.refresh_existing)
-                _write_tracker(db, tracker_records)
-
-            elapsed = max(0.001, time.perf_counter() - start)
-            LOG.info(
-                "Processed %d/%d | complete=%d partial=%d failed=%d no_media=%d updated_rows=%d throughput=%.2f videos/s",
-                stats["processed"], total, stats["complete"], stats["partial"], stats["failed"],
-                stats["no_media"], stats["database_rows_updated"], stats["processed"] / elapsed,
-            )
-            if args.video_id is not None:
-                break
-
+                    if not args.dry_run:
+                        if fields_to_write:
+                            update_rows.append((row["id"], fields_to_write))
+                        tracker_status, attempts, retry_minutes = _tracker_status(
+                            result, result.attempts_before, missing, row_status
+                        )
+                        if tracker_status == "retry":
+                            stats["retry_scheduled"] += 1
+                        if tracker_status == "exhausted":
+                            stats["exhausted"] += 1
+                        tracker_records.append((
+                            row, result, tracker_status, attempts, retry_minutes,
+                            missing, hosts_to_store,
+                        ))
+    
+                if not args.dry_run:
+                    # Keep video values and their retry/host checkpoint atomic.
+                    with db.transaction():
+                        stats["database_rows_updated"] += _database_update(db, update_rows, args.refresh_existing)
+                        _write_tracker(db, tracker_records)
+    
+                elapsed = max(0.001, time.perf_counter() - start)
+                LOG.info(
+                    "Processed %d/%d | complete=%d partial=%d failed=%d no_media=%d updated_rows=%d throughput=%.2f videos/s",
+                    stats["processed"], total, stats["complete"], stats["partial"], stats["failed"],
+                    stats["no_media"], stats["database_rows_updated"], stats["processed"] / elapsed,
+                )
+                if args.video_id is not None:
+                    break
+    
     elapsed = max(0.001, time.perf_counter() - start)
     LOG.info("Media Enrichment Finished")
     LOG.info("Processed: %d; full success: %d; partial: %d; failed: %d; no media: %d",
