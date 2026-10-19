@@ -46,14 +46,14 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 350
     env:
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}}
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
       SOURCE_ORIGIN: https://mobilexh.live
-      BATCH_SIZE: ${{ inputs.batch_size }}}
-      CONCURRENCY: ${{ inputs.concurrency }}}
-      MAX_VIDEOS: ${{ inputs.max_videos }}}
-      DRY_RUN: ${{ inputs.dry_run }}}
-      REFRESH_EXISTING: ${{ inputs.refresh_existing }}}
-      VIDEO_ID: ${{ inputs.video_id }}}
+      BATCH_SIZE: ${{ inputs.batch_size }}
+      CONCURRENCY: ${{ inputs.concurrency }}
+      MAX_VIDEOS: ${{ inputs.max_videos }}
+      DRY_RUN: ${{ inputs.dry_run }}
+      REFRESH_EXISTING: ${{ inputs.refresh_existing }}
+      VIDEO_ID: ${{ inputs.video_id }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
