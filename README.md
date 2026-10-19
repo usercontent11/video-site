@@ -50,3 +50,31 @@ Start **Scrape one category** using blank category and `chain=true`. After the s
 The Flask site is in `app.py` and `siteapp/`. Deployment configuration for Vercel is in `vercel.json`; configure the environment variables described in [SITE_README.md](SITE_README.md) before deploying. Vercel installs dependencies from the repository-root `requirements.txt`, so keep the website dependencies listed there. The separate `site-requirements.txt` is available for a smaller standalone website environment.
 
 The site reads the existing Neon catalog populated by the scraper. It does not download or host video files. By default, video pages link to the original publisher; playback through an HLS resolver requires an explicitly configured, authorized resolver and allowlisted hosts. Set a verified `THUMBNAIL_ORIGIN` that matches the stored image paths; do not assume all thumbnails share one CDN.
+
+
+## Video media enrichment
+
+A separate manually triggered workflow enriches media metadata for existing public.videos rows. It does not replace or run the category scraper.
+
+1. Open **Actions → Enrich video media → Run workflow**.
+2. Start with dry_run=true, video_id=1193895, and max_videos=1. The diagnostic output shows the main model ID, source JSON keys, normalized paths, source hosts, rejected fields, and any errors. This is read-only against public.videos and does not create the tracker table.
+3. Run a small representative dry-run batch before enabling writes. For a real update, set dry_run=false. Leave refresh_existing=false unless you intentionally want valid extracted paths to replace already-populated paths.
+4. Default inputs are batch size 500, concurrency 20, maximum videos 0 (no application-level limit), dry run enabled, and refresh disabled. These are starting points, not measured throughput guarantees.
+
+The worker reads DATABASE_URL from the existing GitHub Actions secret and uses the existing httpx, beautifulsoup4, and psycopg dependencies. It verifies videoModel.id against the database ID and checks the media directory before storing a path. It only extracts from the primary model or an object whose ID and canonical page URL match that model; it does not borrow assets from recommended videos. It does not download image/video files, modify access_status, change unrelated video columns, bypass age gates, or retry access-restricted pages indefinitely.
+
+### Retry checkpoint and CDN host preservation
+
+The first non-dry-run run creates one small sidecar table, public.video_media_enrichment, used to record retry status and per-field CDN hostnames without changing public.videos. Validated paths are written in batches to the existing table; a new null/empty value never overwrites existing data. Retryable failures use bounded attempts and backoff. Successful partial results and valid pages with optional media missing are checkpointed to prevent endless refetching.
+
+**CDN hostname caveat:** the catalog stores URL paths without domains, and hosts can differ between the thumbnail, image, preview, sprite, and trailer. The sidecar's media_hosts JSON stores the exact source host per media field for URLs that this worker actually processes. Older paths created by the category scraper do not have verified host metadata in that sidecar; do not assume every pre-existing path can be reconstructed from trailer_cdn_version alone. That column only captures a numeric thumb-vN shard for the validated trailer host when one is present. If the frontend needs to construct working URLs for every asset, join public.video_media_enrichment.media_hosts by video_id and use a verified per-field hostname; do not guess a common CDN origin.
+
+Inspect worker results and retry state with this SQL:
+
+    SELECT status, count(*) FROM public.video_media_enrichment GROUP BY status ORDER BY status;
+    SELECT video_id, status, attempts, next_retry_at, reason_code, missing_fields
+    FROM public.video_media_enrichment
+    ORDER BY updated_at DESC
+    LIMIT 50;
+
+The manual workflow runs Python compile and regression tests before making requests. A safe rollout is: run the single-video diagnostic, review the output, run a small dry-run batch, then deliberately enable database writes.
